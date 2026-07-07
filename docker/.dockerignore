@@ -1,0 +1,9 @@
+# .dockerignore — keep the build context small (sources are bind-mounted at runtime).
+.git
+wiki
+**/__pycache__
+**/*.pyc
+**/build
+**/install
+**/log
+**/.pytest_cache

@@ -1,32 +1,33 @@
 <?xml version="1.0"?>
-<package>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
   <name>ur_control</name>
-  <version>0.1.0</version>
-  <description>The ur_control package</description>
-  <author email="beltran@hlab.sys.es.osaka-u.ac.jp">Cristian Beltran</author>
-  <maintainer email="beltran@hlab.sys.es.osaka-u.ac.jp">Cristian Beltran</maintainer>
-  <license>BSD</license>
+  <version>0.2.0</version>
+  <description>UR control library: motion, force/compliance control, grippers (ROS 2 port).</description>
+  <maintainer email="cristian.beltran@sinicx.com">Cristian Beltran</maintainer>
+  <author email="cristianbehe@gmail.com">Cristian Beltran</author>
+  <license>MIT</license>
 
-  <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>control_msgs</build_depend>
-  <build_depend>controller_manager</build_depend>
-  <build_depend>effort_controllers</build_depend>
-  <build_depend>gripper_action_controller</build_depend>
-  <build_depend>joint_state_controller</build_depend>
-  <build_depend>joint_trajectory_controller</build_depend>
-  <build_depend>ur3_description</build_depend>
-  <build_depend>robot_state_publisher</build_depend>
-  <build_depend>sensor_msgs</build_depend>
-  <build_depend>trajectory_msgs</build_depend>
-  
-  <run_depend>control_msgs</run_depend>
-  <run_depend>controller_manager</run_depend>
-  <run_depend>effort_controllers</run_depend>
-  <run_depend>gripper_action_controller</run_depend>
-  <run_depend>joint_state_controller</run_depend>
-  <run_depend>joint_trajectory_controller</run_depend>
-  <run_depend>ur3_description</run_depend>
-  <run_depend>robot_state_publisher</run_depend>
-  <run_depend>sensor_msgs</run_depend>
-  <run_depend>trajectory_msgs</run_depend>
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>trajectory_msgs</depend>
+  <depend>control_msgs</depend>
+  <depend>controller_manager_msgs</depend>
+  <depend>ur_dashboard_msgs</depend>
+  <depend>ur_msgs</depend>
+
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-scipy</exec_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
 </package>

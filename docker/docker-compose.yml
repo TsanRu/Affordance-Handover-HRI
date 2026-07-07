@@ -1,0 +1,38 @@
+services:
+  ur-python-utilities:
+    hostname: ur-python-utilities
+    runtime: ${DOCKER_RUNTIME:-nvidia}
+    privileged: true
+    working_dir: /root/ws
+    environment:
+      # Pass host user information (for fix-permission-issues.sh).
+      - HOST_USER=${USER}
+      - HOST_UID=${HOST_UID:-1000}
+      - HOST_GID=${HOST_GID:-1000}
+      # Display X Server GUI.
+      - DISPLAY
+      - QT_X11_NO_MITSHM=1
+      # NVIDIA container runtime.
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - NVIDIA_REQUIRE_CUDA=cuda>=9.0
+      - DOCKER_RUNTIME=${DOCKER_RUNTIME:-nvidia}
+      # ROS 2 / DDS (no roscore).
+      - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+      - RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}
+    image: ur_python_utilities:jazzy
+    tty: true
+    build:
+      context: ../
+      dockerfile: ./docker/Dockerfile
+      args:
+        - DOCKERFILE_COMMIT_SHORT_SHA
+    volumes:
+      # Bind-mount the repo; colcon workspace lives at /root/ws.
+      - ../:/root/ws/src/ur_python_utilities
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
+      - /dev/:/dev/
+    network_mode: host
+    command: /root/ws/docker/scripts/initialize-docker-container.sh
+    shm_size: 1g

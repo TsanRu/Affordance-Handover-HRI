@@ -32,11 +32,10 @@
 
 import numpy as np
 
-import rospy
-
 import PyKDL as kdl
 
 from urdf_parser_py.urdf import URDF
+
 
 def euler_to_quat(r, p, y):
     sr, sp, sy = np.sin(r/2.0), np.sin(p/2.0), np.sin(y/2.0)
@@ -45,6 +44,7 @@ def euler_to_quat(r, p, y):
             cr*sp*cy + sr*cp*sy,
             cr*cp*sy - sr*sp*cy,
             cr*cp*cy + sr*sp*sy]
+
 
 def urdf_pose_to_kdl_frame(pose):
     pos = [0., 0., 0.]
@@ -57,22 +57,38 @@ def urdf_pose_to_kdl_frame(pose):
     return kdl.Frame(kdl.Rotation.Quaternion(*euler_to_quat(*rot)),
                      kdl.Vector(*pos))
 
+
+def _toKdlPose(pose):
+    # URDF might have RPY OR XYZ unspecified. Both default to zeros
+    rpy = pose.rpy if pose and pose.rpy and len(pose.rpy) == 3 else [0, 0, 0]
+    xyz = pose.xyz if pose and pose.xyz and len(pose.xyz) == 3 else [0, 0, 0]
+
+    return kdl.Frame(
+        kdl.Rotation.RPY(*rpy),
+        kdl.Vector(*xyz))
+
+
 def urdf_joint_to_kdl_joint(jnt):
-    origin_frame = urdf_pose_to_kdl_frame(jnt.origin)
-    if jnt.joint_type == 'fixed':
-        return kdl.Joint(jnt.name, kdl.Joint.None)
-    axis = kdl.Vector(*[float(s) for s in jnt.axis])
-    if jnt.joint_type == 'revolute':
-        return kdl.Joint(jnt.name, origin_frame.p,
-                         origin_frame.M * axis, kdl.Joint.RotAxis)
-    if jnt.joint_type == 'continuous':
-        return kdl.Joint(jnt.name, origin_frame.p,
-                         origin_frame.M * axis, kdl.Joint.RotAxis)
-    if jnt.joint_type == 'prismatic':
-        return kdl.Joint(jnt.name, origin_frame.p,
-                         origin_frame.M * axis, kdl.Joint.TransAxis)
-    print "Unknown joint type: %s." % jnt.joint_type
-    return kdl.Joint(jnt.name, kdl.Joint.None)
+    if kdl.__version__ >= '1.5.0':
+        def fixed(j, F): return kdl.Joint(j.name, getattr(kdl.Joint, 'Fixed'))
+    else:
+        def fixed(j, F): return kdl.Joint(j.name, getattr(kdl.Joint, 'None'))
+
+    def rotational(j, F): return kdl.Joint(j.name, F.p, F.M * kdl.Vector(*j.axis), kdl.Joint.RotAxis)
+    def translational(j, F): return kdl.Joint(j.name, F.p, F.M * kdl.Vector(*j.axis), kdl.Joint.TransAxis)
+
+    type_map = {
+        'fixed': fixed,
+        'revolute': rotational,
+        'continuous': rotational,
+        'prismatic': translational,
+        'floating': fixed,
+        'planar': fixed,
+        'unknown': fixed,
+    }
+
+    return type_map[jnt.type](jnt, _toKdlPose(jnt.origin))
+
 
 def urdf_inertial_to_kdl_rbi(i):
     origin = urdf_pose_to_kdl_frame(i.origin)
@@ -86,9 +102,12 @@ def urdf_inertial_to_kdl_rbi(i):
     return origin.M * rbi
 
 # Returns a PyKDL.Tree generated from a urdf_parser_py.urdf.URDF object.
+
+
 def kdl_tree_from_urdf_model(urdf):
     root = urdf.get_root()
     tree = kdl.Tree(root)
+
     def add_children_to_tree(parent):
         if parent in urdf.child_map:
             for joint, child_name in urdf.child_map[parent]:
@@ -110,8 +129,10 @@ def kdl_tree_from_urdf_model(urdf):
     add_children_to_tree(root)
     return tree
 
+
 def main():
     import sys
+
     def usage():
         print("Tests for kdl_parser:\n")
         print("kdl_parser <urdf file>")
@@ -133,17 +154,18 @@ def main():
     for j in robot.joints:
         if robot.joints[j].joint_type != 'fixed':
             num_non_fixed_joints += 1
-    print "URDF non-fixed joints: %d;" % num_non_fixed_joints,
-    print "KDL joints: %d" % tree.getNrOfJoints()
-    print "URDF joints: %d; KDL segments: %d" %(len(robot.joints),
-                                                tree.getNrofSegments())
+    print("URDF non-fixed joints: %d;" % num_non_fixed_joints)
+    print("KDL joints: %d" % tree.getNrOfJoints())
+    print("URDF joints: %d; KDL segments: %d" % (len(robot.joints),
+                                                 tree.getNrofSegments()))
     import random
     base_link = robot.get_root()
-    end_link = robot.links.keys()[random.randint(0, len(robot.links)-1)]
+    end_link = list(robot.links.keys())[random.randint(0, len(robot.links)-1)]
     chain = tree.getChain(base_link, end_link)
-    print "Root link: %s; Random end link: %s" % (base_link, end_link)
+    print("Root link: %s; Random end link: %s" % (base_link, end_link))
     for i in range(chain.getNrOfSegments()):
-        print chain.getSegment(i).getName()
+        print(chain.getSegment(i).getName())
+
 
 if __name__ == "__main__":
     main()

@@ -28,4 +28,5 @@
 
 from .ur_pykdl import (
     ur_kinematics,
+    get_robot_description,
 )

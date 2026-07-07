@@ -1,0 +1,83 @@
+[workspace]
+authors = ["Cristian Beltran <cristian.beltran@sinicx.com>"]
+channels = ["robostack-jazzy", "conda-forge"]
+name = "ur_python_utilities"
+# Ubuntu 24.04 Noble ships glibc 2.39; declaring it here (instead of pixi's
+# older default floor) lets the solver pick newer conda-forge builds.
+platforms = [{ platform = "linux-64", glibc = "2.36" }]
+version = "0.1.0"
+
+[activation]
+scripts = ["pixi/activate.sh"]
+
+[activation.env]
+ROS_DOMAIN_ID = "0"
+RMW_IMPLEMENTATION = "rmw_fastrtps_cpp"
+
+[tasks]
+# One-time (per machine): populate rosdep's system sources. Needs sudo, so
+# it is not wired into rosdep-update/rosdep-install.
+rosdep-init = "sudo rosdep init || true"
+rosdep-update = "rosdep update --rosdistro jazzy"
+# Symlinks this repo's packages + vcs-imports cartesian_controllers (see
+# dependencies.repos) into ws/src/, mirroring docker/scripts/initialize-colcon-workspace.sh.
+setup-workspace = "bash pixi/setup-workspace.sh"
+rosdep-install = { cmd = "rosdep install --from-paths ws/src --ignore-src -r -y --rosdistro jazzy", depends-on = ["setup-workspace"] }
+build = "bash pixi/build.sh"
+build-debug = "bash pixi/build.sh --cmake-args -DCMAKE_BUILD_TYPE=Debug"
+test = { cmd = "colcon test --packages-skip cartesian_controller_simulation cartesian_controller_tests && colcon test-result --verbose", cwd = "ws" }
+clean = "rm -rf ws/build ws/install ws/log"
+
+[dependencies]
+python = "3.12.*"
+
+# --- ROS 2 Jazzy core + dev tooling ---
+ros-jazzy-desktop = "*"
+compilers = "*"
+cmake = "*"
+make = "*"
+ninja = "*"
+pkg-config = "*"
+colcon-common-extensions = "*"
+rosdep = "*"
+
+# --- MoveIt 2 + ros2_control (ur_gripper_gz / ur_gripper_gz_moveit_config) ---
+ros-jazzy-moveit = "*"
+ros-jazzy-moveit-visual-tools = "*"
+ros-jazzy-ros2-control = "*"
+ros-jazzy-ros2-controllers = "*"
+ros-jazzy-controller-manager = "*"
+ros-jazzy-joint-state-publisher = "*"
+ros-jazzy-joint-state-publisher-gui = "*"
+ros-jazzy-xacro = "*"
+
+# cartesian_controllers (vcs-imported; provides cartesian_compliance_controller)
+# needs these plus a 3.3-compatible Eigen below.
+ros-jazzy-kdl-parser = "*"
+ros-jazzy-realtime-tools = "*"
+ros-jazzy-interactive-markers = "*"
+
+# --- Gazebo Harmonic + ros2_control bridge ---
+ros-jazzy-ros-gz = "*"
+ros-jazzy-gz-ros2-control = "*"
+
+# --- UR driver/sim, Robotiq description, kinematics ---
+ros-jazzy-ur = "*"
+ros-jazzy-ur-simulation-gz = "*"
+ros-jazzy-robotiq-description = "*"
+ros-jazzy-trac-ik = "*"
+ros-jazzy-trac-ik-kinematics-plugin = "*"
+ros-jazzy-python-orocos-kdl-vendor = "*"
+
+# cartesian_controllers' CMakeLists pins find_package(Eigen3 3.3), which
+# Eigen's SameMajorVersion compatibility policy rejects on conda-forge's 5.x.
+eigen = "3.4.*"
+
+# --- Python libs used by ur_control / ur_pykdl / ur_control_examples ---
+numpy = "*"
+scipy = "*"
+matplotlib = "*"
+quaternion = "*"
+
+[pypi-dependencies]
+vcstool = "*"

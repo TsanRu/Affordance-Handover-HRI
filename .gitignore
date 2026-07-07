@@ -52,3 +52,15 @@ srv_gen
 */*/src/**/*
 
 *.pyc
+
+results/
+core.*
+.vscode/
+*/**/__pycache__
+
+# pixi environment
+.pixi/*
+!.pixi/config.toml
+
+# colcon workspace assembled by pixi/setup-workspace.sh (symlinks + vcs-imported deps)
+/ws/

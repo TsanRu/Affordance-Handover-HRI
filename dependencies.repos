@@ -1,0 +1,8 @@
+# ROS 2 workspace dependencies for ur_python_utilities (vcstool).
+# Import from the colcon workspace root:
+#   cd /root/ws && vcs import src < src/ur_python_utilities/dependencies.repos
+repositories:
+  cartesian_controllers:
+    type: git
+    url: https://github.com/omron-sinicx/cartesian_controllers.git
+    version: ros2-jazzy
