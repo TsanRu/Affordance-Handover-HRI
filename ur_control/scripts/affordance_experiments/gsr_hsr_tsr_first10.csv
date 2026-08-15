@@ -1,0 +1,9 @@
+object,mode,GSR,HSR,TSR,avg_total_time_s,n_with_time,avg_abs_hoe_deg,n_with_hoe
+hammer,full-system,40.0,10.0,40.0,146.0,4,100.1,4
+hammer,no-llm,90.0,70.0,70.0,91.4,7,26.8,8
+scissors,full-system,80.0,70.0,70.0,67.2,7,90.1,8
+scissors,no-llm,60.0,40.0,60.0,87.2,6,59.8,6
+spatula,full-system,50.0,40.0,40.0,84.3,4,26.3,4
+spatula,no-llm,10.0,0.0,0.0,,0,109.3,1
+large_clamp,full-system,60.0,40.0,50.0,107.2,5,65.0,5
+large_clamp,no-llm,0.0,0.0,0.0,,0,,0

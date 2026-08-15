@@ -2,62 +2,72 @@
 # Specific joint properties can be changed with the keys [max_position, min_position, max_velocity, max_acceleration]
 # Joint limits can be turned off with [has_velocity_limits, has_acceleration_limits]
 joint_limits:
-  elbow_joint:
+  leftarm_elbow_joint:
     has_velocity_limits: true
     max_velocity: 3.14159265359
     has_acceleration_limits: false
     max_acceleration: 0
-  robotiq_85_left_finger_tip_joint:
+  leftarm_hande_left_finger_joint:
     has_velocity_limits: true
-    max_velocity: 100
+    max_velocity: 0.15
     has_acceleration_limits: false
     max_acceleration: 0
-  robotiq_85_left_inner_knuckle_joint:
-    has_velocity_limits: true
-    max_velocity: 100
-    has_acceleration_limits: false
-    max_acceleration: 0
-  finger_joint:
-    has_velocity_limits: true
-    max_velocity: 0.5
-    has_acceleration_limits: false
-    max_acceleration: 0
-  robotiq_85_right_finger_tip_joint:
-    has_velocity_limits: true
-    max_velocity: 100
-    has_acceleration_limits: false
-    max_acceleration: 0
-  robotiq_85_right_inner_knuckle_joint:
-    has_velocity_limits: true
-    max_velocity: 100
-    has_acceleration_limits: false
-    max_acceleration: 0
-  robotiq_85_right_knuckle_joint:
-    has_velocity_limits: true
-    max_velocity: 100
-    has_acceleration_limits: false
-    max_acceleration: 0
-  shoulder_lift_joint:
+  leftarm_shoulder_lift_joint:
     has_velocity_limits: true
     max_velocity: 3.14159265359
     has_acceleration_limits: false
     max_acceleration: 0
-  shoulder_pan_joint:
+  leftarm_shoulder_pan_joint:
     has_velocity_limits: true
     max_velocity: 3.14159265359
     has_acceleration_limits: false
     max_acceleration: 0
-  wrist_1_joint:
+  leftarm_wrist_1_joint:
     has_velocity_limits: true
     max_velocity: 6.28318530718
     has_acceleration_limits: false
     max_acceleration: 0
-  wrist_2_joint:
+  leftarm_wrist_2_joint:
     has_velocity_limits: true
     max_velocity: 6.28318530718
     has_acceleration_limits: false
     max_acceleration: 0
-  wrist_3_joint:
+  leftarm_wrist_3_joint:
+    has_velocity_limits: true
+    max_velocity: 6.28318530718
+    has_acceleration_limits: false
+    max_acceleration: 0
+  rightarm_elbow_joint:
+    has_velocity_limits: true
+    max_velocity: 3.14159265359
+    has_acceleration_limits: false
+    max_acceleration: 0
+  rightarm_hande_left_finger_joint:
+    has_velocity_limits: true
+    max_velocity: 0.15
+    has_acceleration_limits: false
+    max_acceleration: 0
+  rightarm_shoulder_lift_joint:
+    has_velocity_limits: true
+    max_velocity: 3.14159265359
+    has_acceleration_limits: false
+    max_acceleration: 0
+  rightarm_shoulder_pan_joint:
+    has_velocity_limits: true
+    max_velocity: 3.14159265359
+    has_acceleration_limits: false
+    max_acceleration: 0
+  rightarm_wrist_1_joint:
+    has_velocity_limits: true
+    max_velocity: 6.28318530718
+    has_acceleration_limits: false
+    max_acceleration: 0
+  rightarm_wrist_2_joint:
+    has_velocity_limits: true
+    max_velocity: 6.28318530718
+    has_acceleration_limits: false
+    max_acceleration: 0
+  rightarm_wrist_3_joint:
     has_velocity_limits: true
     max_velocity: 6.28318530718
     has_acceleration_limits: false

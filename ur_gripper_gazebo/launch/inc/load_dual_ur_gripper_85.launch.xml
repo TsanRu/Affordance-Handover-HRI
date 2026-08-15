@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="ur_robot" default="ur3"/>
+  <arg name="grasp_plugin" default="false"/>
+  <arg name="dual_arm" default="true"/> <arg name="transmission_hw_interface" default="hardware_interface/PositionJointInterface"/>
+  <arg name="safety_limits" default="false"/>
+  <arg name="safety_pos_margin" default="0.15"/>
+  <arg name="safety_k_position" default="20"/>
+  <arg name="joint_limit_params" default="$(find ur_description)/config/$(arg ur_robot)/joint_limits.yaml"/>
+
+  <param name="robot_description" command="$(find xacro)/xacro '$(find ur_gripper_gazebo)/urdf/dual_ur_gripper_85.xacro'
+    joint_limit_params:='$(arg joint_limit_params)'
+    kinematics_params:='$(find ur_description)/config/$(arg ur_robot)/default_kinematics.yaml'
+    physical_params:='$(find ur_description)/config/$(arg ur_robot)/physical_parameters.yaml'
+    visual_params:='$(find ur_description)/config/$(arg ur_robot)/visual_parameters.yaml'
+    transmission_hw_interface:=$(arg transmission_hw_interface)
+    safety_limits:=$(arg safety_limits)
+    safety_pos_margin:=$(arg safety_pos_margin)
+    safety_k_position:=$(arg safety_k_position)"
+    />
+    
+    </launch>

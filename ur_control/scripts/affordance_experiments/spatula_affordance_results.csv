@@ -1,0 +1,11 @@
+index,trial_log,object,affordance_ratio_pct,affordance_result,rotation_deg,hoe_func_deg,inference_time_s,grasp_time_s,total_time_s,obj_pos_z,note
+1,trial_3.log,spatula,100.0,HIT,-31.2,-35.5,13.96,72.39,125.78,0.758,handover strategy was geometric (not functional_end) this trial
+2,trial_6.log,spatula,100.0,HIT,-16.3,-22.0,9.90,20.07,91.95,0.766,
+3,trial_7.log,spatula,100.0,HIT,142.9,-14.9,11.49,13.31,54.69,0.797,
+4,trial_9.log,spatula,85.3,HIT,129.5,-32.8,16.74,14.05,64.72,0.781,
+5,trial_12.log,spatula,100.0,HIT,107.3,-14.7,15.00,78.19,134.40,0.797,
+6,trial_13.log,spatula,75.9,HIT,162.7,-35.1,11.34,20.77,78.36,0.777,
+7,trial_14.log,spatula,100.0,HIT,-38.1,,15.22,81.33,164.35,0.758,HOE_func not captured in log excerpt
+8,trial_15.log,spatula,100.0,HIT,124.8,-16.3,10.21,13.39,61.71,0.799,
+9,trial_20.log,spatula,100.0,HIT,96.2,-30.0,13.92,14.84,54.20,0.798,
+10,trial_22.log,spatula,63.0,HIT,9.5,-22.1,10.72,21.48,71.99,0.797,

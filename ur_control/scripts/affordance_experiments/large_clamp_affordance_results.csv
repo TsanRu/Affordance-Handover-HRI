@@ -1,0 +1,11 @@
+index,trial_log,object,affordance_ratio_pct,affordance_result,rotation_deg,hoe_func_deg,inference_time_s,grasp_time_s,total_time_s,obj_pos_z,note
+1,trial_2.log,large_clamp,23.7,MISS,-40.9,+0.0,14.82,20.22,107.02,0.796,
+2,trial_6.log,large_clamp,83.7,HIT,-8.3,+0.0,10.37,83.98,154.91,0.785,
+3,trial_8.log,large_clamp,100.0,HIT,-5.4,+0.0,11.53,18.15,72.66,0.805,
+4,trial_9.log,large_clamp,100.0,HIT,-8.4,+0.0,10.41,20.73,55.00,0.803,
+5,trial_11.log,large_clamp,83.3,HIT,-30.0,+0.0,12.62,8.70,62.74,0.787,
+6,trial_12.log,large_clamp,100.0,HIT,-1.7,+1.7,10.23,14.44,60.82,0.795,
+7,trial_14.log,large_clamp,100.0,HIT,+10.6,+0.0,12.34,9.67,44.80,0.804,
+8,trial_15.log,large_clamp,100.0,HIT,-25.5,-0.0,12.13,9.17,54.23,0.795,
+9,trial_16.log,large_clamp,0.0,MISS,-162.3,+162.3,12.42,10.54,84.59,0.792,
+10,trial_19.log,large_clamp,47.9,MISS,-53.8,+0.0,12.23,8.65,37.27,0.805,

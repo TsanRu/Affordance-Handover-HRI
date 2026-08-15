@@ -1,6 +1,7 @@
 <launch>
   <!-- Specific ur robot -->
   <arg name="ur_robot" default="ur3"/>
+  <!-- <arg name="ur_robot2" default="ur3"/> -->
 
   <!-- By default, we do not start a database (it can be large) -->
   <arg name="db" default="false" />
@@ -51,14 +52,40 @@
   <!-- Run the main MoveIt! executable without trajectory execution (we do not have controllers configured by default) -->
   <!-- <group ns=""> -->
   <!-- <group ns="test"> -->
-  <include file="$(find ur_gripper_85_moveit_config)/launch/move_group.launch">
+  <!-- <include file="$(find ur_gripper_85_moveit_config)/launch/move_group.launch">
     <arg name="ur_robot" default="$(arg ur_robot)"/>
     <arg name="allow_trajectory_execution" value="true"/>
     <arg name="fake_execution" value="false"/>
     <arg name="info" value="true"/>
     <arg name="debug" value="$(arg debug)"/>
-  </include>  
+  </include>   -->
   <!-- </group> -->
+  
+  <!-- MoveIt! specific arguments -->
+  <arg name="allow_trajectory_execution" value="true"/>
+  <arg name="fake_execution" value="false"/>
+  <arg name="info" value="true"/>
+
+  <!-- <group ns="robot1"> -->
+    <include file="$(find ur_gripper_85_moveit_config)/launch/move_group.launch">
+      <arg name="ur_robot" value="$(arg ur_robot)"/>
+      <arg name="allow_trajectory_execution" value="$(arg allow_trajectory_execution)"/>
+      <arg name="fake_execution" value="$(arg fake_execution)"/>
+      <arg name="info" value="$(arg info)"/>
+      <arg name="debug" value="$(arg debug)"/>
+    </include>
+  <!-- </group> -->
+
+  <!-- Launch MoveIt! for the second robot -->
+  <!-- <group ns="robot2">
+    <include file="$(find ur_gripper_85_moveit_config)/launch/move_group.launch">
+      <arg name="ur_robot" value="$(arg ur_robot)"/>
+      <arg name="allow_trajectory_execution" value="$(arg allow_trajectory_execution)"/>
+      <arg name="fake_execution" value="$(arg fake_execution)"/>
+      <arg name="info" value="$(arg info)"/>
+      <arg name="debug" value="$(arg debug)"/>
+    </include>
+  </group> -->
 
   <!-- Run Rviz and load the default config to see the state of the move_group node -->
 

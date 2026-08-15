@@ -1,0 +1,27 @@
+# 1. 建立並啟用環境
+conda create -n anygrasp python=3.9 -y
+conda activate anygrasp
+
+# 2. 【核心步驟】使用 Conda 一次性鎖定 Pytorch、Numpy 和 Scipy 的版本
+conda install pytorch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 pytorch-cuda=11.7 numpy==1.23.5 scipy==1.13.1 -c pytorch -c nvidia -y
+
+# 3. 安裝編譯工具和其他 pip 套件
+pip install "setuptools<60.0"
+pip install ninja
+
+# 4. 【次要步驟】安裝 requirements.txt 中的其餘周邊套件
+# 此時 pip 會跳過已安裝的 numpy 和 scipy
+cd ~/ros_ws/src/anygrasp_sdk
+pip install -r requirements.txt
+
+# 5. 編譯並安裝 graspnetAPI
+cd ~/ros_ws/src/graspnetAPI
+pip install .
+
+# 6. 編譯並安裝 MinkowskiEngine
+cd ~/ros_ws/src/anygrasp_sdk/MinkowskiEngine
+python3 setup.py install
+
+# 7. 編譯並安裝 pointnet2
+cd ~/ros_ws/src/anygrasp_sdk/pointnet2
+python3 setup.py install

@@ -1,0 +1,9 @@
+index,trial_log,object,affordance_ratio_pct,affordance_result,rotation_deg,hoe_func_deg,inference_time_s,grasp_time_s,total_time_s,note
+1,trial_8.log,hammer,33.5,HIT,-77.4,-67.2,11.02,20.56,67.82,
+2,trial_10.log,hammer,27.3,HIT,-98.0,-10.1,10.88,32.38,66.39,
+3,trial_12.log,hammer,33.5,HIT,169.6,-83.2,10.59,56.33,102.30,
+4,trial_13.log,hammer,11.3,HIT,10.7,-23.7,12.66,29.91,82.14,
+5,trial_14.log,hammer,0.0,HIT,72.6,-19.5,12.72,14.17,49.60,first trial after left/right gripper close value changed to 0.0
+6,trial_15b.log,hammer,0.0,HIT,47.2,-9.7,13.41,23.06,58.86,
+7,trial_17.log,hammer,0.0,HIT,-125.6,-15.8,11.90,14.30,60.73,
+8,trial_18.log,hammer,100.0,MISS,138.4,-171.9,12.22,22.76,61.37,wrist rotation failed (手腕旋轉失敗); large HOE error correlates with MISS

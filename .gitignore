@@ -1,54 +1,22 @@
-*.py[cod]
-
-# C extensions
-*.so
-
-# Packages
-*.egg
-*.egg-info
-dist
-build
-eggs
-parts
-bin
-var
-sdist
-develop-eggs
-.installed.cfg
-lib
-lib64
-
-# Installer logs
-pip-log.txt
-
-# Unit test / coverage reports
-.coverage
-.tox
-nosetests.xml
-
-# Translations
-*.mo
-
-# Mr Developer
-.mr.developer.cfg
-.project
-.cproject
-cmake_install.cmake
-.pydevproject
-*.swp
-CATKIN_IGNORE
-catkin
-catkin_generated
-devel
-
-cpp
-docs
-msg_gen
-srv_gen
-*.smoketest
-*.cfgc
-*_msgs/src/
-*/src/**/cfg
-*/*/src/**/*
-
+# Python
+__pycache__/
 *.pyc
+*.pyo
+
+# ROS / catkin build artifacts
+build/
+devel/
+install/
+*.egg-info/
+
+# Editor / IDE
+.vscode/
+.idea/
+.claude/
+*.swp
+
+# Runtime scratch data (regenerated automatically when running the system)
+**/my_gazebo_data/
+
+# OS
+.DS_Store

@@ -1,0 +1,9 @@
+object,mode,total_attempts,gsr_count,gsr_pct,hsr_count,hsr_pct,tsr_count,tsr_pct,hsr_given_gsr_pct
+hammer,full-system,20,11,55.0,8,40.0,11,55.0,72.7
+hammer,no-llm,22,20,90.9,10,45.5,14,63.6,50.0
+scissors,full-system,17,12,70.6,10,58.8,10,58.8,83.3
+scissors,no-llm,18,13,72.2,10,55.6,12,66.7,76.9
+spatula,full-system,22,11,50.0,10,45.5,10,45.5,90.9
+spatula,no-llm,30,1,3.3,0,0.0,0,0.0,0.0
+large_clamp,full-system,19,12,63.2,10,52.6,11,57.9,83.3
+large_clamp,no-llm,30,0,0.0,0,0.0,0,0.0,

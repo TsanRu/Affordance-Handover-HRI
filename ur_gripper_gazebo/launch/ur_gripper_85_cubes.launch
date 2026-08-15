@@ -16,7 +16,37 @@
 
   <!--Robot description and related parameter files -->
   <arg name="robot_description_file" default="$(dirname)/inc/load_ur_gripper_85.launch.xml" doc="Launch file which populates the 'robot_description' parameter."/>
+  <!-- <arg name="robot_description_file2" default="$(dirname)/inc/load_ur_gripper_85.launch.xml" doc="Launch file which populates the 'robot_description' parameter."/> -->
   <arg name="ur_robot" default="ur3"/>
+
+  <!-- Human hand description and related parameter files -->
+  <arg name="urdf_dir" default="$(find softhands_description)/urdf/softhands.urdf.xacro"/>
+	<arg name="model" default="sh_hand_v1_2_research"/>
+  <arg name="hand_description_file" default="$(find softhands_description)/urdf/softhands.urdf.xacro" />
+
+  <arg name="source_list" default="[
+	
+										/right_hand_v1_2_research/palm_state, 
+										/right_hand_v1_2_research/thumb_state, 
+										/right_hand_v1_2_research/index_state, 
+										/right_hand_v1_2_research/middle_state, 
+										/right_hand_v1_2_research/ring_state, 
+										/right_hand_v1_2_research/little_state,
+										/left_hand_v1_2_research/palm_state, 
+										/left_hand_v1_2_research/thumb_state, 
+										/left_hand_v1_2_research/index_state, 
+										/left_hand_v1_2_research/middle_state, 
+										/left_hand_v1_2_research/ring_state, 
+										/left_hand_v1_2_research/little_state ]" doc="The joint_states source list for the joint_state_publisher."/>
+
+  <!-- load the robot description to the param server -->
+	<param name="$(arg model)_description"  
+		command="$(find xacro)/xacro $(arg urdf_dir)
+		sh_version:=v1_2_research  "/>
+
+	<!-- spwan the hands in gazebo -->
+	<node name="my_robot_spawn_v1_2_research" pkg="gazebo_ros" type="spawn_model" output="screen" 
+		args="-urdf -param $(arg model)_description -model $(arg model) -x 1.0 -y 0.0 -z 0.77"/>
 
   <!-- Start up simulated world -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
@@ -35,10 +65,8 @@
     <arg name="ur_robot" value="$(arg ur_robot)"/>
     <arg name="grasp_plugin" value="$(arg grasp_plugin)"/>
   </include>
-  <!-- Spawn robot in gazebo (and move it upwards):
-       better initial values should be -2.355 and 1.57 but the robot does
-       something strange when unpausing it
-  -->
+
+  <!-- Spawn robot in gazebo -->
   <node name="spawn_gazebo_model" pkg="gazebo_ros" type="spawn_model"
         args="-urdf -param robot_description -model robot 
               -x 0.11 -z 0.69 -Y -1.5707
@@ -50,5 +78,13 @@
               -unpause"
         output="screen" />
 
+  <!-- Spawn virtual camera in gazebo -->
+  <node name="spawn_camera_model" pkg="gazebo_ros" type="spawn_model"
+        args="-file $(find ur_gripper_gazebo)/urdf/camera.urdf -urdf -model camera -x 0.73 -y 0 -z 1.365 -R 0.015 -P 1.105 -Y 3.137"
+        output="screen" />
+
+
+  
 
 </launch>
+

@@ -1,0 +1,24 @@
+<!-- align_depth.launch -->
+<launch>
+  <!-- 將 nodelet 放在相機的命名空間下，這樣比較整潔 -->
+  <group ns="/r200/camera">
+
+    <!-- 啟動一個 Nodelet 管理器 -->
+    <node pkg="nodelet" type="nodelet" name="rgbd_nodelet_manager" args="manager" output="screen"/>
+
+    <!-- 運行 depth_image_proc/register nodelet -->
+    <!-- 它會訂閱 color 和 depth 的 topic，然後發布對齊後的深度圖 depth_registered/image_rect -->
+    <node pkg="nodelet" type="nodelet" name="register_depth"
+          args="load depth_image_proc/register rgbd_nodelet_manager">
+      <!-- 將 nodelet 需要的 topic 名稱映射到您實際的 topic -->
+      <remap from="rgb/camera_info"             to="/r200/camera/color/camera_info"/>
+      <remap from="rgb/image_rect_color"        to="/r200/camera/color/image_raw"/>
+      <remap from="depth/camera_info"           to="/r200/camera/depth/camera_info"/>
+      <remap from="depth/image_rect"            to="/r200/camera/depth/image_raw"/>
+      
+      <!-- 輸出的對齊深度圖 -->
+      <remap from="depth_registered/image_rect" to="/r200/camera/depth_registered/image_raw"/>
+    </node>
+
+  </group>
+</launch>

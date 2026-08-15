@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Launch file parameters -->
+  <arg name="debug" default="true" />
+  <arg name="gripper_robotiq_85" default="false" />
+  <arg name="gripper_robotiq_hande" default="false" />
+
+  <arg if="$(arg debug)" name="DEBUG" value="screen"/>
+  <arg unless="$(arg debug)" name="DEBUG" value="log"/>
+
+  <!-- 機器手臂1 -->
+  <group ns="robot1">
+    <!-- <arg name="DEBUG" value="$(arg DEBUG)" /> -->
+    <!-- <arg name="gripper_robotiq_85" value="$(arg gripper_robotiq_85)" /> -->
+    <!-- <arg name="gripper_robotiq_hande" value="$(arg gripper_robotiq_hande)" /> -->
+    <arg if="$(eval gripper_robotiq_85 or gripper_robotiq_hande)" name="gripper_controller" value="gripper_controller"/>
+    <arg unless="$(eval gripper_robotiq_85 or gripper_robotiq_hande)" name="gripper_controller" value=""/>
+
+    <!-- Controllers config -->
+    <rosparam file="$(find ur_control)/config/ur_controllers.yaml" command="load" />
+
+    <group if="$(arg gripper_robotiq_85)">
+      <rosparam file="$(find robotiq_control)/config/gripper_85_controller.yaml" command="load" />
+    </group>
+    <group if="$(arg gripper_robotiq_hande)">
+      <rosparam file="$(find robotiq_control)/config/gripper_hande_controller.yaml" command="load" />
+    </group>
+
+    <!-- Load controllers -->
+    <node name="robot1_controllers" pkg="controller_manager" type="spawner" respawn="false"
+          output="$(arg DEBUG)"
+          args="joint_state_controller scaled_pos_joint_traj_controller gripper_controller"/>
+
+    <!-- TF -->
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot1_state_publisher">
+      <param name="publish_frequency" type="double" value="50" />
+    </node>
+  </group>
+
+  <!-- 機器手臂2 -->
+  <group ns="robot2">
+    <!-- <arg name="DEBUG" value="$(arg DEBUG)" /> -->
+    <!-- <arg name="gripper_robotiq_85" value="$(arg gripper_robotiq_85)" /> -->
+    <!-- <arg name="gripper_robotiq_hande" value="$(arg gripper_robotiq_hande)" /> -->
+    <arg if="$(eval gripper_robotiq_85 or gripper_robotiq_hande)" name="gripper_controller" value="gripper_controller"/>
+    <arg unless="$(eval gripper_robotiq_85 or gripper_robotiq_hande)" name="gripper_controller" value=""/>
+
+    <!-- Controllers config -->
+    <rosparam file="$(find ur_control)/config/ur_controllers.yaml" command="load" />
+
+    <group if="$(arg gripper_robotiq_85)">
+      <rosparam file="$(find robotiq_control)/config/gripper_85_controller.yaml" command="load" />
+    </group>
+    <group if="$(arg gripper_robotiq_hande)">
+      <rosparam file="$(find robotiq_control)/config/gripper_hande_controller.yaml" command="load" />
+    </group>
+
+    <!-- Load controllers -->
+    <node name="robot2_controllers" pkg="controller_manager" type="spawner" respawn="false"
+          output="$(arg DEBUG)"
+          args="joint_state_controller scaled_pos_joint_traj_controller gripper_controller"/>
+
+    <!-- TF -->
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot2_state_publisher">
+      <param name="publish_frequency" type="double" value="50" />
+    </node>
+  </group>
+
+</launch>

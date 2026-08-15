@@ -1,0 +1,11 @@
+index,trial_log,object,affordance_ratio_pct,affordance_result,rotation_deg,hoe_func_deg,inference_time_s,grasp_time_s,total_time_s,obj_pos_z,note
+1,trial_1.log,scissors,100.0,HIT,+67.0,+54.8,12.97,14.14,88.33,0.779,
+2,trial_2.log,scissors,100.0,HIT,+51.1,+71.7,9.76,14.37,59.38,0.779,
+3,trial_5.log,scissors,100.0,HIT,-73.2,+53.2,11.39,14.70,118.29,0.798,
+4,trial_6.log,scissors,100.0,HIT,-58.1,-1.6,10.09,15.06,40.05,0.785,
+5,trial_12.log,scissors,100.0,HIT,-64.6,-40.6,9.42,25.64,70.94,0.786,
+6,trial_13.log,scissors,17.8,MISS,-77.0,-124.3,10.22,13.81,68.53,0.796,
+7,trial_14.log,scissors,83.3,HIT,-52.4,+4.6,10.84,107.72,151.01,0.798,
+8,trial_15.log,scissors,16.1,MISS,+64.2,+159.3,10.42,23.98,102.50,0.799,
+9,trial_17.log,scissors,89.8,HIT,+75.6,-83.9,9.79,13.63,53.64,0.788,
+10,trial_18.log,scissors,100.0,HIT,-31.7,-106.0,10.53,24.37,135.52,0.806,
