@@ -14,7 +14,7 @@ deployed to a physical UR3 handing objects to a real human hand.
 
 <!-- TODO: 有demo影片/GIF的話放在這裡 -->
 
-## Why this exists
+## Motivation
 
 A naive success/fail metric ("did the handover complete") doesn't capture *where* the object
 landed. Adding a semantic reasoning layer on top of a purely geometric grasp pipeline can even
