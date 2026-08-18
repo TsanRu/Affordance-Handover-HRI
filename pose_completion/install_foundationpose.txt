@@ -1,5 +1,13 @@
 GPU: 4090 version, ROS version: ROS Noetic
 
+本文件分兩部分：
+  PART 1 — 安裝 FoundationPose 本身，跑官方 demo（run_demo.py）驗證環境沒問題
+  PART 2 — 銜接到這個專案（讓 foundationpose_node.py 能連上 ROS），在 PART 1 都成功之後才做
+
+===================================================================================================================
+PART 1 — 安裝 FoundationPose + 跑官方 demo
+===================================================================================================================
+
 # 1. clone repo
 git clone https://github.com/NVlabs/FoundationPose
 cd FoundationPose
@@ -13,7 +21,7 @@ docker pull shingarey/foundationpose_custom_cuda121:latest
 # 需要：2023-10-28-18-33-37 (refiner) 和 2024-01-11-20-02-45 (scorer)
 
 # 4. 下載 demo data（readme 有連結）
-# 放到 demo_data/ 下 (wdemo_data這個folder要自己創)
+# 放到 demo_data/ 下 (demo_data這個folder要自己創)
 
 # 5. Docker 內要安裝 GPU driver (nvidia-container-toolkit)
     # 5-1. 加 NVIDIA repository
@@ -37,26 +45,36 @@ docker pull shingarey/foundationpose_custom_cuda121:latest
     # 5-5. 驗證
     docker run --rm --gpus all ubuntu nvidia-smi
 
-# 6. 啟動 container
+# 6. 啟動 container（這裡啟動的 container 會持續留著，後面 PART 2 接著用，不用關掉重開）
 bash docker/run_container.sh
 
-# 7. 進到 container 後第一次要編 extensions
+# 7. 進到 container 後第一次要編 extensions（只需要做一次）
 bash build_all.sh
 
-# 8. 跑 demo
+# 8. 跑官方 demo，確認環境本身沒問題（這步只是驗證用，不是這個專案實際會執行的程式）
 python run_demo.py
 
+到這裡如果 demo 能正常跑完，代表 FoundationPose 本身裝好了。接下來才是 PART 2。
+
+===================================================================================================================
+PART 2 — 銜接這個專案：讓 container 裡的 Python 能連上 ROS master
 ===================================================================================================================
 
-在 container 中用 --network host + 裝 rospy
+PART 1 的 container 需要能跟 host 上跑的 ROS master（roscore/Gazebo）互通，所以要用
+`--network host` 啟動、並在 container 裡額外裝 rospy 相關套件。這步做完之後，實際執行這個
+專案時就是在這個 container 裡跑 `foundationpose_node.py`（不是 PART 1 的 run_demo.py 了）。
 
-# 1. 啟動 container
+# 1. 啟動 container（跟 PART 1 步驟 6 是同一支腳本；若 container 已經在跑就不用重複執行）
 bash docker/run_container.sh
 
-# 2. 安裝 
+# 2. 安裝 ROS 橋接套件
 pip install rospkg pyyaml netifaces defusedxml
 pip install --extra-index-url https://rospypi.github.io/simple/ rospy roslib
 pip install --extra-index-url https://rospypi.github.io/simple/ sensor-msgs std-msgs geometry-msgs tf2-ros tf
 
-# 3. 驗證
+# 3. 驗證能連上 ROS master（host 端要先有 roscore 或 Gazebo 在跑）
 python -c "import rospy; rospy.init_node('test_node', anonymous=True); print('✅ Connected to roscore'); print('Master URI:', rospy.get_master().getUri())"
+
+# 4. 驗證通過後，實際執行方式（在 container 裡）：
+cd /path/to/FoundationPose   # 對應這個repo裡的 pose_completion/foundationpose_node.py
+python foundationpose_node.py
