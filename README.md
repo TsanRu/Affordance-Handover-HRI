@@ -199,3 +199,12 @@ scripts for polling node liveness and restarting individual nodes without restar
 This repo contains only the code written for this research (dual-arm control logic, the
 semantic-layer glue code, the affordance metric, and the ablation experiment tooling) — not the
 upstream AnyGrasp / FoundationPose codebases themselves.
+
+## Author
+
+Developed at the [Robot Vision Lab](https://ntut-rvl.github.io/web/).
+
+## Citation
+
+A conference paper based on this work is currently under submission. Citation information will
+be added here once the paper is accepted / publicly available.
