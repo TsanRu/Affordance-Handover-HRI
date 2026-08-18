@@ -26,7 +26,9 @@ from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from PIL import Image as PILImage
 from transformers import pipeline, SamModel, SamProcessor
-import google.generativeai as genai
+import base64
+from io import BytesIO
+from openai import OpenAI
 import warnings
 
 warnings.filterwarnings('ignore')
@@ -291,6 +293,12 @@ hammer, scissors, spatula, banana, tomato_soup_can, sugar_box, bowl, large_clamp
 }}
 """
 
+def pil_to_base64(img):
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    return base64.b64encode(buffer.getvalue()).decode()
+
+
 def imgmsg_to_numpy(msg):
     dtype_class = np.uint8
     channels = 3 if "rgb8" in msg.encoding or "bgr8" in msg.encoding else 1
@@ -396,8 +404,7 @@ class SemanticBrainNode:
         )
         self.sam_model = SamModel.from_pretrained("facebook/sam-vit-base").to(self.device)
         self.sam_processor = SamProcessor.from_pretrained("facebook/sam-vit-base")
-        genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-        self.gemini_model = genai.GenerativeModel('gemini-flash-latest')
+        self.gpt_client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
         rospy.loginfo("✅ 所有 AI 模型載入完成！")
 
         self.save_dir = os.path.join(
@@ -425,11 +432,20 @@ class SemanticBrainNode:
         self.latest_image = msg
 
     def resolve_intent(self, user_input: str, img_pil) -> str:
-        """用 Gemini 將使用者自然語言描述解析成英文物件名稱"""
+        """用 GPT 將使用者自然語言描述解析成英文物件名稱"""
         rospy.loginfo(f"🔍 解析使用者意圖：「{user_input}」")
         prompt = INTENT_UNDERSTANDING_PROMPT.format(user_input=user_input)
-        response = self.gemini_model.generate_content([prompt, img_pil])
-        raw = response.text
+        response = self.gpt_client.chat.completions.create(
+            model="gpt-5.4",
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{pil_to_base64(img_pil)}"}},
+                ]
+            }]
+        )
+        raw = response.choices[0].message.content
         result = json.loads(raw.replace("```json", "").replace("```", "").strip())
         name = result.get("object_name", "unknown")
         rospy.loginfo(f"✅ 意圖解析結果：{name}（信心：{result.get('confidence')}，理由：{result.get('reasoning')}）")
@@ -473,7 +489,7 @@ class SemanticBrainNode:
             h, w = img_np.shape[:2]
             img_pil = PILImage.fromarray(img_np)
 
-            # 如果收到的是自然語言，先用 Gemini 解析成英文物件名
+            # 如果收到的是自然語言，先用 GPT 解析成英文物件名
             if user_input:
                 object_name = self.resolve_intent(user_input, img_pil)
                 if object_name == "unknown":
@@ -533,9 +549,9 @@ class SemanticBrainNode:
             grid_img_path = os.path.join(self.save_dir, "cropped_grid_for_vlm.png")
             cv2.imwrite(grid_img_path, cv2.cvtColor(grid_img_rgb, cv2.COLOR_RGB2BGR))
 
-            # Gemini 推理
-            rospy.loginfo("🧠 [3/4] 呼叫 Gemini 分析網格...")
-            gemini_local_img = PILImage.open(grid_img_path)
+            # GPT 推理
+            rospy.loginfo("🧠 [3/4] 呼叫 GPT 分析網格...")
+            gpt_local_img = PILImage.open(grid_img_path)
             if mode == "receiver_only":
                 prompt = RECEIVER_ONLY_PROMPT
             elif mode == "left_only":
@@ -543,21 +559,31 @@ class SemanticBrainNode:
             else:
                 prompt = VISION_SYSTEM_PROMPT
 
-            response = self.gemini_model.generate_content([prompt, img_pil, gemini_local_img])
+            response = self.gpt_client.chat.completions.create(
+                model="gpt-5.4",
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{pil_to_base64(img_pil)}"}},
+                        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{pil_to_base64(gpt_local_img)}"}},
+                    ]
+                }]
+            )
 
-            clean_json = response.text.replace("```json", "").replace("```", "").strip()
+            clean_json = response.choices[0].message.content.replace("```json", "").replace("```", "").strip()
             vlm_result = json.loads(clean_json)
 
             receiver_grids = vlm_result.get('left_grids', [])
             giver_grids = vlm_result.get('right_grids', [])
             handover_strategy = vlm_result.get('handover_strategy', 'geometric')
             receiver_part = vlm_result.get('receiver_part', None)
-            rospy.loginfo(f"💡 Gemini 決定 - receiver: {receiver_grids}, giver: {giver_grids}")
+            rospy.loginfo(f"💡 GPT 決定 - receiver: {receiver_grids}, giver: {giver_grids}")
             rospy.loginfo(f"   策略: {handover_strategy}, 接取部位: {receiver_part}")
             rospy.loginfo(f"   理由: {vlm_result.get('reasoning', '')}")
-            
+
             if not receiver_grids:
-                rospy.logerr("❌ Gemini 沒有回傳有效的 receiver 網格")
+                rospy.logerr("❌ GPT 沒有回傳有效的 receiver 網格")
                 self.done_pub.publish(json.dumps({"status": "fail", "reason": "no_grids"}))
                 return
 

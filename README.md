@@ -5,7 +5,7 @@ in the receiver's hand, validated by a custom affordance metric.
 
 A dual-UR3 Gazebo simulation stands in for one robot arm handing an object to a human hand
 (the second arm acts as a receiver-hand proxy, since simulating a realistic human hand is out
-of scope). A vision-language model (Gemini) reasons about *where* on the object to grasp and
+of scope). A vision-language model (GPT) reasons about *where* on the object to grasp and
 *which end* should face the receiver, so that e.g. a hammer arrives handle-first rather than
 head-first. A custom **Affordance GT** metric — computed from the object's real Gazebo pose and
 the receiving fingertip's real TF position, invisible to the system at runtime — measures
@@ -28,7 +28,7 @@ Four independently-run ROS nodes, plus this control script, communicate over top
 | Role | File | What it does |
 |---|---|---|
 | Arm control / orchestration | [`ur_control/scripts/simple_grasp_controller.py`](ur_control/scripts/simple_grasp_controller.py) | Drives the whole mission: trigger detection, grasp, in-air handover, retreat. Also computes the Affordance GT and HOE (Hand-Object-Error orientation) metrics post-hoc. |
-| Semantic reasoning + grasp region selection | [`semantic_layer/brain.py`](semantic_layer/brain.py) | OWL-v2 (zero-shot detection) → Gemini (which grid cells = giver/receiver region, functional-end vs geometric strategy) → SAM (precise segmentation mask). |
+| Semantic reasoning + grasp region selection | [`semantic_layer/brain.py`](semantic_layer/brain.py) | OWL-v2 (zero-shot detection) → GPT (which grid cells = giver/receiver region, functional-end vs geometric strategy) → SAM (precise segmentation mask). |
 | Grasp pose generation | [`semantic_layer/anygrasp_ros.py`](semantic_layer/anygrasp_ros.py) | Feeds the segmented point cloud to [AnyGrasp](https://github.com/graspnet/anygrasp_sdk) for 6-DoF grasp candidates, per arm. |
 | Pose completion | [`pose_completion/foundationpose_node.py`](pose_completion/foundationpose_node.py) | [FoundationPose](https://github.com/NVlabs/FoundationPose) estimates full object pose from a partial view during re-detection at the handover zone. |
 
@@ -50,7 +50,7 @@ post-hoc evaluation.
 ## Results
 
 Ablation comparing the full semantic pipeline against a `no-llm` baseline (OWL-v2 + SAM only,
-no Gemini reasoning, so the giver-side grasp region is the *entire* segmented object instead of
+no GPT reasoning, so the giver-side grasp region is the *entire* segmented object instead of
 a semantically-chosen sub-region) — first 10 attempts per condition:
 
 | Object | Mode | GSR (grasp) | HSR (handover) | TSR (task) | Affordance HIT rate |
@@ -102,17 +102,17 @@ place each under `ur_gripper_gazebo/models/<NNN>_<name>/`, matching the entries 
 An SDF + `.material` + `model.config` needs to accompany each mesh (see any existing non-YCB
 model folder for the format, e.g. `ur_gripper_gazebo/models/floor/`).
 
-### 3. Semantic layer (AnyGrasp + Gemini)
+### 3. Semantic layer (AnyGrasp + GPT)
 
 - Follow [`semantic_layer/install_anygrasp.txt`](semantic_layer/install_anygrasp.txt) to set up
   the `anygrasp_ros` conda environment (PyTorch, MinkowskiEngine, pointnet2, graspnetAPI).
 - **AnyGrasp requires its own academic license** — register at the
   [AnyGrasp SDK repo](https://github.com/graspnet/anygrasp_sdk) to get a license file. It cannot
   be shared; each user needs their own.
-- A separate `lang-sam` conda env runs `brain.py` (needs `transformers`, `torch`, `google-generativeai`).
-- Set a Gemini API key (get one free at [aistudio.google.com/apikey](https://aistudio.google.com/apikey)):
+- A separate `lang-sam` conda env runs `brain.py` (needs `transformers`, `torch`, `openai`).
+- Set an OpenAI API key (`brain.py` uses `gpt-5.4` for grid-region reasoning):
   ```bash
-  export GEMINI_API_KEY="your-key-here"   # add to ~/.bashrc to persist
+  export OPENAI_API_KEY="your-key-here"   # add to ~/.bashrc to persist
   ```
 
 ### 4. Pose completion (FoundationPose)
@@ -159,7 +159,7 @@ scripts for polling node liveness and restarting individual nodes without restar
 - Pose completion via [FoundationPose](https://github.com/NVlabs/FoundationPose) (NVlabs).
 - Object detection/segmentation via [OWL-v2](https://huggingface.co/google/owlv2-base-patch16-ensemble)
   and [SAM](https://huggingface.co/facebook/sam-vit-base) (Hugging Face `transformers`).
-- Semantic reasoning via Google Gemini.
+- Semantic reasoning via OpenAI GPT.
 
 This repo contains only the code written for this research (dual-arm control logic, the
 semantic-layer glue code, the affordance metric, and the ablation experiment tooling) — not the
