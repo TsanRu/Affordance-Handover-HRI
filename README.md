@@ -1,15 +1,16 @@
 # Affordance-Handover-HRI
 
 Semantic-guided robot-to-human object handover — ensures objects land functional-side-first
-in the receiver's hand, validated by a custom affordance metric.
+in the receiver's hand, validated in both a dual-arm Gazebo simulation and a real UR3 handing
+objects to a human receiver.
 
-A dual-UR3 Gazebo simulation stands in for one robot arm handing an object to a human hand
-(the second arm acts as a receiver-hand proxy, since simulating a realistic human hand is out
-of scope). A vision-language model (GPT) reasons about *where* on the object to grasp and
-*which end* should face the receiver, so that e.g. a hammer arrives handle-first rather than
-head-first. A custom **Affordance GT** metric — computed from the object's real Gazebo pose and
-the receiving fingertip's real TF position, invisible to the system at runtime — measures
-whether that actually happened, and ablation studies quantify what the semantic layer buys you.
+A vision-language model (GPT-5.4, prompted over a Set-of-Mask-style labeled grid) reasons about
+*where* on the object to grasp and *which end* should face the receiver, so that e.g. a hammer
+arrives handle-first rather than head-first. A PCA-based wrist rotation step then adjusts the
+object's delivered orientation to match. The approach is first validated in a dual-UR3 Gazebo
+simulation (one arm handing to a second arm acting as a receiver proxy, with a custom
+**Affordance GT** metric measuring whether the correct end was actually grasped) and then
+deployed to a physical UR3 handing objects to a real human hand.
 
 <!-- TODO: 有demo影片/GIF的話放在這裡 -->
 
@@ -27,8 +28,8 @@ Four independently-run ROS nodes, plus this control script, communicate over top
 
 | Role | File | What it does |
 |---|---|---|
-| Arm control / orchestration | [`ur_control/scripts/simple_grasp_controller.py`](ur_control/scripts/simple_grasp_controller.py) | Drives the whole mission: trigger detection, grasp, in-air handover, retreat. Also computes the Affordance GT and HOE (Hand-Object-Error orientation) metrics post-hoc. |
-| Semantic reasoning + grasp region selection | [`semantic_layer/brain.py`](semantic_layer/brain.py) | OWL-v2 (zero-shot detection) → GPT (which grid cells = giver/receiver region, functional-end vs geometric strategy) → SAM (precise segmentation mask). |
+| Arm control / orchestration + orientation adjustment | [`ur_control/scripts/simple_grasp_controller.py`](ur_control/scripts/simple_grasp_controller.py) | Drives the whole mission: trigger detection, grasp, in-air handover, retreat. After the giver arm grasps, runs a **PCA-based wrist rotation** step — computing the object's principal axis from its point cloud and rotating the wrist so the functional end faces the receiver — before moving to the handover zone. Also computes the Affordance GT and HOE (Hand-Object-Error orientation) metrics post-hoc. |
+| Semantic reasoning + grasp region selection | [`semantic_layer/brain.py`](semantic_layer/brain.py) | OWL-v2 (zero-shot detection) → GPT-5.4 reasoning over a **Set-of-Mask (SoM) style 5×5 labeled grid** overlaid on the image (which grid cells = giver/receiver region, functional-end vs geometric strategy) → SAM (precise segmentation mask). |
 | Grasp pose generation | [`semantic_layer/anygrasp_ros.py`](semantic_layer/anygrasp_ros.py) | Feeds the segmented point cloud to [AnyGrasp](https://github.com/graspnet/anygrasp_sdk) for 6-DoF grasp candidates, per arm. |
 | Pose completion | [`pose_completion/foundationpose_node.py`](pose_completion/foundationpose_node.py) | [FoundationPose](https://github.com/NVlabs/FoundationPose) estimates full object pose from a partial view during re-detection at the handover zone. |
 
@@ -49,32 +50,58 @@ post-hoc evaluation.
 
 ## Results
 
-Ablation comparing the full semantic pipeline against a `no-llm` baseline (OWL-v2 + SAM only,
-no GPT reasoning, so the giver-side grasp region is the *entire* segmented object instead of
-a semantically-chosen sub-region) — first 10 attempts per condition:
+### Simulation: Multi-Object Dual-Arm Handover (8 object categories)
 
-| Object | Mode | GSR (grasp) | HSR (handover) | TSR (task) | Affordance HIT rate |
-|---|---|---:|---:|---:|---:|
-| hammer | full-system | 40% | 10% | 40% | — |
-| hammer | no-llm | 90% | 70% | 70% | 70% |
-| scissors | full-system | 80% | 70% | 70% | — |
-| scissors | no-llm | 60% | 40% | 60% | 80% |
-| spatula | full-system | 50% | 40% | 40% | — |
-| spatula | no-llm | 10% | 0% | 0% | — |
-| large_clamp | full-system | 60% | 40% | 50% | — |
-| large_clamp | no-llm | 0% | 0% | 0% | — |
+Full system evaluated across 8 YCB objects (4 functional-end objects: hammer, spatula,
+scissors, clamp; 4 non-functional objects: banana, sugar box, tomato soup can, bowl),
+10 trials each, random position/orientation per trial.
 
-Full per-object CSVs and raw trial logs are in [`ur_control/scripts/affordance_experiments/`](ur_control/scripts/affordance_experiments/).
+| Metric | Result |
+|---|---:|
+| Grasp Success Rate (GSR) | 78% |
+| Handover Success Rate (HSR) | 46% |
+| Task Success Rate (TSR) | 58% |
 
-**Finding**: for objects with roughly uniform grip geometry along their length (hammer, scissors),
-removing semantic guidance barely hurts — or even helps — raw grasp success, because AnyGrasp's
-candidates are diverse enough to include a good handle grasp regardless. For objects with a sharp
-width transition (spatula's thin handle vs. wide blade, large_clamp's arms vs. jaw hinge), the
-dense cluster of candidates on the wide/complex end statistically crowds the sparse handle
-candidates out of the top-K AnyGrasp ever tries — without semantic region-narrowing, the system
-can go from "usually succeeds" to "essentially never grasps the object at all," not just a lower
-success rate. The semantic layer's value here isn't only picking the *correct* affordance end —
-it's also what makes basic grasp feasibility reliable for non-uniform objects in the first place.
+The GSR→HSR gap (32 points) reflects that a feasible grasp doesn't guarantee a feasible
+in-air handover — this is what the pose-completion module and the retry/regrasp fallback
+exist to close.
+
+### Orientation Adjustment Accuracy (Handover Orientation Error, HOE)
+
+For functional-end objects, the PCA-based wrist rotation mechanism was evaluated on how
+close the delivered orientation lands to the ideal functional-end-first target:
+
+| Metric | Result |
+|---|---:|
+| Mean HOE | 22.92° |
+| Within 30° | 77% |
+| Within 45° | 97% |
+
+### Real-World Human-to-Robot Handover (10 everyday objects)
+
+Deployed to a physical UR3 + human receiver setup. Baseline uses only the top-ranked
+AnyGrasp candidate pose; the multi-pose variant retries up to 3 ranked candidates on
+planning failure; the orientation-adjustment variant additionally applies the PCA wrist
+rotation to the 5 functional-end objects in the set (screwdriver, ladle, spoon, hammer,
+pliers).
+
+| Setting | Objects | GSR | HSR | TSR |
+|---|---|---:|---:|---:|
+| Single-pose baseline | 10 | 70% | 59% | 58% |
+| Multi-pose fallback | 10 | 76% | 65% | 61% |
+| + Orientation adjustment | 5 (functional-end subset) | 76% | 72% | 62% |
+
+### Ablations (simulation)
+
+| Removed component | Effect |
+|---|---|
+| Semantic reasoning (GPT + SoM) | TSR unchanged, but functional-correctness rate (does the receiver grab the *correct* end) drops ~10–20 points — success without semantic guidance often means grabbing the wrong end. |
+| Point cloud completion | HSR drops from 46% → 36% — this module mainly helps the receiver arm plan a grasp on the occluded object. |
+| Orientation adjustment | TSR *rises* to 71% (removing a failure-prone extra motion step) — this doesn't mean the module isn't worth it; see the paper's discussion of the completion-rate-vs-functional-correctness trade-off. |
+
+Full per-object breakdowns and per-trial logs are in the paper's appendix; raw experiment
+CSVs for the simulation ablations are in
+[`ur_control/scripts/affordance_experiments/`](ur_control/scripts/affordance_experiments/).
 
 ## Setup
 
