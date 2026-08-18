@@ -1,0 +1,17 @@
+# brain.py 執行環境（semantic layer：OWL-v2 + SAM + GPT）
+
+# 1. 建立並啟用環境
+conda create -n lang-sam python=3.10 -y
+conda activate lang-sam
+
+# 2. PyTorch（CUDA 12.4，依實際GPU/驅動版本調整）
+pip install torch==2.4.1 torchvision==0.19.1 --index-url https://download.pytorch.org/whl/cu124
+
+# 3. OWL-v2 + SAM（走 huggingface transformers）
+pip install transformers pillow numpy opencv-python
+
+# 4. GPT 呼叫
+pip install openai
+
+# 5. ROS 橋接
+pip install rospkg

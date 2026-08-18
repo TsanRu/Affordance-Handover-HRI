@@ -1,0 +1,62 @@
+GPU: 4090 version, ROS version: ROS Noetic
+
+# 1. clone repo
+git clone https://github.com/NVlabs/FoundationPose
+cd FoundationPose
+
+# 2.
+docker pull shingarey/foundationpose_custom_cuda121:latest
+# 然後改 docker/run_container.sh 裡的 image 名稱
+
+# 3. 下載權重（readme 有連結）
+# 放到 weights/ 下 (weights這個folder要自己創)
+# 需要：2023-10-28-18-33-37 (refiner) 和 2024-01-11-20-02-45 (scorer)
+
+# 4. 下載 demo data（readme 有連結）
+# 放到 demo_data/ 下 (wdemo_data這個folder要自己創)
+
+# 5. Docker 內要安裝 GPU driver (nvidia-container-toolkit)
+    # 5-1. 加 NVIDIA repository
+    curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | \
+    sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+
+    curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+    sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
+    # 5-2. 安裝
+    sudo apt-get update
+    sudo apt-get install -y nvidia-container-toolkit
+
+    # 5-3. 設定 Docker runtime
+    sudo nvidia-ctk runtime configure --runtime=docker
+
+    # 5-4. 重啟 Docker
+    sudo systemctl restart docker
+
+    # 5-5. 驗證
+    docker run --rm --gpus all ubuntu nvidia-smi
+
+# 6. 啟動 container
+bash docker/run_container.sh
+
+# 7. 進到 container 後第一次要編 extensions
+bash build_all.sh
+
+# 8. 跑 demo
+python run_demo.py
+
+===================================================================================================================
+
+在 container 中用 --network host + 裝 rospy
+
+# 1. 啟動 container
+bash docker/run_container.sh
+
+# 2. 安裝 
+pip install rospkg pyyaml netifaces defusedxml
+pip install --extra-index-url https://rospypi.github.io/simple/ rospy roslib
+pip install --extra-index-url https://rospypi.github.io/simple/ sensor-msgs std-msgs geometry-msgs tf2-ros tf
+
+# 3. 驗證
+python -c "import rospy; rospy.init_node('test_node', anonymous=True); print('✅ Connected to roscore'); print('Master URI:', rospy.get_master().getUri())"

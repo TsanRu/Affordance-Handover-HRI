@@ -129,14 +129,20 @@ place each under `ur_gripper_gazebo/models/<NNN>_<name>/`, matching the entries 
 An SDF + `.material` + `model.config` needs to accompany each mesh (see any existing non-YCB
 model folder for the format, e.g. `ur_gripper_gazebo/models/floor/`).
 
-### 3. Semantic layer (AnyGrasp + GPT)
+### 3. Semantic layer (AnyGrasp + GPT) — two separate conda envs
 
-- Follow [`semantic_layer/install_anygrasp.txt`](semantic_layer/install_anygrasp.txt) to set up
-  the `anygrasp_ros` conda environment (PyTorch, MinkowskiEngine, pointnet2, graspnetAPI).
-- **AnyGrasp requires its own academic license** — register at the
-  [AnyGrasp SDK repo](https://github.com/graspnet/anygrasp_sdk) to get a license file. It cannot
-  be shared; each user needs their own.
-- A separate `lang-sam` conda env runs `brain.py` (needs `transformers`, `torch`, `openai`).
+`brain.py` and `anygrasp_ros.py` intentionally run in **different** conda environments (different
+PyTorch/CUDA/Python version requirements), even though both live in `semantic_layer/`.
+
+- **`anygrasp_ros` env** (runs `anygrasp_ros.py`): follow
+  [`semantic_layer/install_anygrasp.txt`](semantic_layer/install_anygrasp.txt) — sets up PyTorch,
+  MinkowskiEngine, pointnet2, graspnetAPI, and AnyGrasp itself.
+  - **AnyGrasp requires its own academic license** — register at the
+    [AnyGrasp SDK repo](https://github.com/graspnet/anygrasp_sdk) to get a license file. It cannot
+    be shared; each user needs their own.
+- **`lang-sam` env** (runs `brain.py`): follow
+  [`semantic_layer/install_lang_sam.txt`](semantic_layer/install_lang_sam.txt) — PyTorch,
+  `transformers` (OWL-v2 + SAM), `openai`.
 - Set an OpenAI API key (`brain.py` uses `gpt-5.4` for grid-region reasoning):
   ```bash
   export OPENAI_API_KEY="your-key-here"   # add to ~/.bashrc to persist
@@ -144,8 +150,10 @@ model folder for the format, e.g. `ur_gripper_gazebo/models/floor/`).
 
 ### 4. Pose completion (FoundationPose)
 
-Follow FoundationPose's own [installation instructions](https://github.com/NVlabs/FoundationPose)
-(it's typically run inside a Docker container with its own conda env). `pose_completion/foundationpose_node.py`
+Follow [`pose_completion/install_foundationpose.txt`](pose_completion/install_foundationpose.txt) —
+pulls a pre-built Docker image with the FoundationPose environment baked in, downloads the model
+weights/demo data, and adds a ROS bridge (`rospy` + friends) inside the container so
+`foundationpose_node.py` can talk to the rest of the system. `pose_completion/foundationpose_node.py`
 in this repo still has this project's original absolute paths (`/home/rvl/ros_ws/...`) — update
 `FP_ROOT`, `YCB_MODELS_ROOT`, `GRIPPER_MESH_DIR`, `SAVE_DIR` near the top of the file to match
 your own workspace layout before running it.

@@ -25,3 +25,6 @@ python3 setup.py install
 # 7. 編譯並安裝 pointnet2
 cd ~/ros_ws/src/anygrasp_sdk/pointnet2
 python3 setup.py install
+
+# 8. anygrasp_ros.py 額外需要的套件（不在上面任何一步裡）
+pip install rospkg opencv-python
