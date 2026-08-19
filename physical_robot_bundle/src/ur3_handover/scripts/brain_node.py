@@ -31,7 +31,10 @@ from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from PIL import Image as PILImage
 from transformers import pipeline, SamModel, SamProcessor
-from google import genai
+# from google import genai
+import base64
+from io import BytesIO
+from openai import OpenAI
 import warnings
 
 warnings.filterwarnings('ignore')
@@ -39,15 +42,25 @@ warnings.filterwarnings('ignore')
 # --- API Key：優先讀環境變數，備援讀 .env 檔 ---
 from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '..', '.env'))
-_api_keys = [k for k in [
-    os.environ.get("GOOGLE_API_KEY"),
-    os.environ.get("GOOGLE_API_KEY_2"),
-    os.environ.get("GOOGLE_API_KEY_3"),
-] if k]
-if not _api_keys:
-    raise EnvironmentError("找不到 GOOGLE_API_KEY，請確認 handeye_ws/.env 存在")
-_genai_clients = [genai.Client(api_key=k) for k in _api_keys]
-_client_index  = 0  # 目前使用的 client 索引
+# _api_keys = [k for k in [
+#     os.environ.get("GOOGLE_API_KEY"),
+#     os.environ.get("GOOGLE_API_KEY_2"),
+#     os.environ.get("GOOGLE_API_KEY_3"),
+# ] if k]
+# if not _api_keys:
+#     raise EnvironmentError("找不到 GOOGLE_API_KEY，請確認 handeye_ws/.env 存在")
+# _genai_clients = [genai.Client(api_key=k) for k in _api_keys]
+# _client_index  = 0  # 目前使用的 client 索引
+
+if not os.environ.get("OPENAI_API_KEY"):
+    raise EnvironmentError("找不到 OPENAI_API_KEY，請確認 .env 存在")
+_gpt_client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
+
+def _pil_to_base64(img):
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    return base64.b64encode(buffer.getvalue()).decode()
 
 # --- UR3 單臂 Gemini Prompt ---
 UR3_SINGLE_ARM_PROMPT = """
@@ -212,8 +225,9 @@ class SemanticBrainNode:
         self.sam_processor = SamProcessor.from_pretrained("facebook/sam-vit-base")
 
         # Gemini VLM for grid analysis（round-robin 多 key）
-        self.gemini_clients = _genai_clients
-        self.gemini_key_idx = 0
+        # self.gemini_clients = _genai_clients
+        # self.gemini_key_idx = 0
+        self.gpt_client = _gpt_client
 
         rospy.loginfo("All AI models loaded.")
 
@@ -383,48 +397,69 @@ class SemanticBrainNode:
             self._log_save("cropped_grid_for_vlm.png", grid_img_bgr)
             grid_img_path = os.path.join(self.save_dir, "cropped_grid_for_vlm.png")
 
-            # --- Gemini 推理 ---
-            rospy.loginfo("[4/5] Gemini analyzing grid...")
-            gemini_local_img = PILImage.open(grid_img_path)
+            # --- GPT 推理 ---
+            rospy.loginfo("[4/5] GPT analyzing grid...")
+            gpt_local_img = PILImage.open(grid_img_path)
 
-            n_clients = len(self.gemini_clients)
-            response = None
-            IS_RATE_LIMIT = lambda e: any(c in e for c in ['429', 'RESOURCE_EXHAUSTED'])
-            IS_SERVER_ERR = lambda e: any(c in e for c in ['503', 'UNAVAILABLE'])
-            for model_id in ['gemini-2.5-flash', 'gemini-2.5-flash-lite']:
-                for attempt in range(n_clients):
-                    client = self.gemini_clients[self.gemini_key_idx]
-                    try:
-                        response = client.models.generate_content(
-                            model=model_id,
-                            contents=[UR3_SINGLE_ARM_PROMPT, gemini_local_img]
-                        )
-                        usage = response.usage_metadata
-                        rospy.loginfo(
-                            f"   Model: {model_id}, Key: [{self.gemini_key_idx}] | "
-                            f"tokens — input: {usage.prompt_token_count}, "
-                            f"output: {usage.candidates_token_count}, "
-                            f"total: {usage.total_token_count}"
-                        )
-                        break
-                    except Exception as e:
-                        err = str(e)
-                        if IS_SERVER_ERR(err):
-                            rospy.logwarn(f"   ⚠️  {model_id} 伺服器過載 (503)，直接切換模型...")
-                            break  # 跳出 key loop，換下一個模型
-                        elif IS_RATE_LIMIT(err):
-                            next_idx = (self.gemini_key_idx + 1) % n_clients
-                            rospy.logwarn(f"   ⚠️  Key [{self.gemini_key_idx}] 限額 (429)，切換至 Key [{next_idx}]...")
-                            self.gemini_key_idx = next_idx
-                            continue
-                        raise
-                if response is not None:
-                    break
-                rospy.logwarn(f"   🔄 {model_id} 無法使用，嘗試 fallback 模型...")
-            if response is None:
-                raise RuntimeError("所有模型均無法使用，請稍後再試")
+            response = self.gpt_client.chat.completions.create(
+                model="gpt-5.4",
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": UR3_SINGLE_ARM_PROMPT},
+                        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{_pil_to_base64(gpt_local_img)}"}},
+                    ]
+                }]
+            )
+            usage = response.usage
+            rospy.loginfo(
+                f"   Model: gpt-5.4 | "
+                f"tokens — input: {usage.prompt_tokens}, "
+                f"output: {usage.completion_tokens}, "
+                f"total: {usage.total_tokens}"
+            )
 
-            clean_json = response.text.replace("```json", "").replace("```", "").strip()
+            # --- Gemini 推理（原本的版本，先保留註解） ---
+            # gemini_local_img = PILImage.open(grid_img_path)
+            #
+            # n_clients = len(self.gemini_clients)
+            # response = None
+            # IS_RATE_LIMIT = lambda e: any(c in e for c in ['429', 'RESOURCE_EXHAUSTED'])
+            # IS_SERVER_ERR = lambda e: any(c in e for c in ['503', 'UNAVAILABLE'])
+            # for model_id in ['gemini-2.5-flash', 'gemini-2.5-flash-lite']:
+            #     for attempt in range(n_clients):
+            #         client = self.gemini_clients[self.gemini_key_idx]
+            #         try:
+            #             response = client.models.generate_content(
+            #                 model=model_id,
+            #                 contents=[UR3_SINGLE_ARM_PROMPT, gemini_local_img]
+            #             )
+            #             usage = response.usage_metadata
+            #             rospy.loginfo(
+            #                 f"   Model: {model_id}, Key: [{self.gemini_key_idx}] | "
+            #                 f"tokens — input: {usage.prompt_token_count}, "
+            #                 f"output: {usage.candidates_token_count}, "
+            #                 f"total: {usage.total_token_count}"
+            #             )
+            #             break
+            #         except Exception as e:
+            #             err = str(e)
+            #             if IS_SERVER_ERR(err):
+            #                 rospy.logwarn(f"   ⚠️  {model_id} 伺服器過載 (503)，直接切換模型...")
+            #                 break  # 跳出 key loop，換下一個模型
+            #             elif IS_RATE_LIMIT(err):
+            #                 next_idx = (self.gemini_key_idx + 1) % n_clients
+            #                 rospy.logwarn(f"   ⚠️  Key [{self.gemini_key_idx}] 限額 (429)，切換至 Key [{next_idx}]...")
+            #                 self.gemini_key_idx = next_idx
+            #                 continue
+            #             raise
+            #     if response is not None:
+            #         break
+            #     rospy.logwarn(f"   🔄 {model_id} 無法使用，嘗試 fallback 模型...")
+            # if response is None:
+            #     raise RuntimeError("所有模型均無法使用，請稍後再試")
+
+            clean_json = response.choices[0].message.content.replace("```json", "").replace("```", "").strip()
             vlm_result = json.loads(clean_json, strict=False)
 
             target_grids = vlm_result.get('target_grids', [])
@@ -432,11 +467,11 @@ class SemanticBrainNode:
             object_shape = vlm_result.get('object_shape', 'box')
             rospy.loginfo(f"   Estimated CoM grid:  {com_grid}")
             rospy.loginfo(f"   Object shape: {object_shape}")
-            rospy.loginfo(f"   Gemini selected grids: {target_grids}")
+            rospy.loginfo(f"   GPT selected grids: {target_grids}")
             rospy.loginfo(f"   Reasoning: {vlm_result.get('reasoning', '')}")
 
             if not target_grids:
-                rospy.logerr("Gemini returned no valid grids")
+                rospy.logerr("GPT returned no valid grids")
                 self.done_pub.publish(json.dumps({
                     "status": "fail", "reason": "no_grids"
                 }))
@@ -461,7 +496,7 @@ class SemanticBrainNode:
                     rospy.logwarn(f"   {grid_id} 覆蓋率不足 ({coverage:.1%} < {min_coverage:.0%})，已排除")
 
             if not validated_grids:
-                rospy.logwarn("所有格子覆蓋率不足，使用 Gemini 原始選擇")
+                rospy.logwarn("所有格子覆蓋率不足，使用 GPT 原始選擇")
                 validated_grids = target_grids
 
             target_grids = validated_grids
