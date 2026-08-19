@@ -4,7 +4,8 @@
 semantic_brain_node.py — UR3 單臂語義抓取視覺前處理節點
 
 改自模擬環境 brain.py，適配 UR3 單臂實體部署。
-功能：OWL-v2 物件偵測 → SAM v1 分割 → SoM 網格 → Gemini 抓取區域推理
+功能：OWL-v2 物件偵測 → SAM v1 分割 → SoM 網格 → GPT 抓取區域推理
+（原本用 Gemini，程式碼裡保留成註解，切換方式見該處說明）
 
 ROS 介面：
   訂閱: /camera/color/image_raw (sensor_msgs/Image)
@@ -62,7 +63,7 @@ def _pil_to_base64(img):
     img.save(buffer, format="PNG")
     return base64.b64encode(buffer.getvalue()).decode()
 
-# --- UR3 單臂 Gemini Prompt ---
+# --- UR3 單臂 VLM Prompt（目前餵給 GPT，原本是 Gemini）---
 UR3_SINGLE_ARM_PROMPT = """
 你是一個機器人視覺分析專家，協助單臂 UR3 機械臂抓取物件。
 
@@ -346,7 +347,7 @@ class SemanticBrainNode:
                 }))
                 return
 
-            # --- SAM v1 分割（提前到 Gemini 之前）---
+            # --- SAM v1 分割（提前到 VLM 呼叫之前）---
             rospy.loginfo("[2/5] SAM segmentation...")
             inputs = self.sam_processor(
                 img_pil,
@@ -380,7 +381,7 @@ class SemanticBrainNode:
             rospy.loginfo("[3/5] Drawing Set-of-Mark grid with SAM contour...")
             grid_img_rgb, grid_dict_local = draw_som_grid(cropped_img, rows=5, cols=5)
 
-            # 在格子圖上疊加 SAM mask 的輪廓線，讓 Gemini 看到物件邊界
+            # 在格子圖上疊加 SAM mask 的輪廓線，讓 VLM 看到物件邊界
             cropped_mask = global_mask[c_ymin:c_ymax, c_xmin:c_xmax].astype(np.uint8)
             contours, _ = cv2.findContours(cropped_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             cv2.drawContours(grid_img_rgb, contours, -1, (180, 0, 255), 2)  # 紫色輪廓
@@ -527,9 +528,9 @@ class SemanticBrainNode:
 
             rospy.loginfo(f"   Logs saved: {self.session_log_dir}")
 
-            # 存 Gemini 推理結果 JSON
+            # 存 VLM 推理結果 JSON
             if self.session_log_dir:
-                with open(os.path.join(self.session_log_dir, "gemini_result.json"), 'w', encoding='utf-8') as f:
+                with open(os.path.join(self.session_log_dir, "vlm_result.json"), 'w', encoding='utf-8') as f:
                     json.dump(vlm_result, f, ensure_ascii=False, indent=2)
 
             rospy.loginfo("Processing complete!")

@@ -190,7 +190,7 @@ scripts for polling node liveness and restarting individual nodes without restar
 [`physical_robot_bundle/`](physical_robot_bundle/) is the real-UR3 counterpart to the simulation
 above — a self-contained catkin workspace (own `catkin_make`, own dependencies, run it separately
 from the simulation packages) that hands objects to a real human hand instead of a second robot
-arm. It uses OWL-v2 + SAM + Gemini for semantic grasp-region reasoning (same idea as
+arm. It uses OWL-v2 + SAM + GPT for semantic grasp-region reasoning (same idea as
 `semantic_layer/`, different implementation) and MediaPipe for real-time hand tracking during the
 handover, with grasp pose generation offloaded to a remote AnyGrasp inference server over ZMQ.
 See its own [README](physical_robot_bundle/README.md),

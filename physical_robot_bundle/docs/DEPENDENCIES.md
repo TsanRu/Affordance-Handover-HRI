@@ -26,7 +26,7 @@ rospack find <package_name>
 
 | 節點 | 預期環境 | 主要非 ROS 套件 |
 | --- | --- | --- |
-| `brain_node.py` | `grasp-py310` conda | OpenCV、PyTorch、Transformers、Pillow、Google GenAI、python-dotenv |
+| `brain_node.py` | `grasp-py310` conda | OpenCV、PyTorch、Transformers、Pillow、OpenAI、python-dotenv |
 | `client_camera.py` | `anygrasp` conda | OpenCV、NumPy、pyzmq |
 | `semantic_grasp_controller.py` | 現場使用的 `anygrasp` conda | NumPy、PyYAML、MoveIt Python |
 | `handover_perception.py` | 系統 ROS Python | MediaPipe、OpenCV、NumPy、PyYAML |
@@ -41,7 +41,7 @@ rospack find <package_name>
 - `anygrasp_sdk`
 - `graspnetAPI`
 - AnyGrasp checkpoint 與 license
-- SAM、OWL、Gemini 相關依賴
+- SAM、OWL、GPT 相關依賴
 - 可由實機端連線的 ZMQ endpoint
 
 ZMQ 位址目前設定於 `client_camera.py` 的 `self.server_addr`。

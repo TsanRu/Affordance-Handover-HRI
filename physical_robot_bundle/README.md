@@ -34,7 +34,8 @@ source devel/setup.bash
 cp .env.example .env
 ```
 
-啟動 `brain_node.py` 前至少要填入 `GOOGLE_API_KEY`。
+啟動 `brain_node.py` 前至少要填入 `OPENAI_API_KEY`（目前實際使用的模型；`GOOGLE_API_KEY`
+系列只有在切回程式碼裡註解掉的 Gemini 版本時才需要）。
 
 ## 執行
 
