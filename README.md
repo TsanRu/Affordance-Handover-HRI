@@ -188,15 +188,37 @@ scripts for polling node liveness and restarting individual nodes without restar
 ## Physical robot deployment
 
 [`physical_robot_bundle/`](physical_robot_bundle/) is the real-UR3 counterpart to the simulation
-above — a self-contained catkin workspace (own `catkin_make`, own dependencies, run it separately
-from the simulation packages) that hands objects to a real human hand instead of a second robot
-arm. It uses OWL-v2 + SAM + GPT for semantic grasp-region reasoning (same idea as
-`semantic_layer/`, different implementation) and MediaPipe for real-time hand tracking during the
-handover, with grasp pose generation offloaded to a remote AnyGrasp inference server over ZMQ.
-See its own [README](physical_robot_bundle/README.md),
-[dependency list](physical_robot_bundle/docs/DEPENDENCIES.md), and
-[operations manual](physical_robot_bundle/docs/OPERATIONS.md) — none of the simulation setup
-above applies to it.
+above: a self-contained catkin workspace that hands objects to a real human hand instead of a
+second robot arm. It reuses the same semantic-reasoning idea (OWL-v2 + SAM + GPT-5.4 over a SoM
+grid) but the implementation, node layout, and hardware interface are different enough that it's
+kept as its own workspace rather than folded into `ur_control/` — build and run it separately.
+
+**Key differences from the simulation setup:**
+- Grasp pose generation (AnyGrasp) runs on a **remote GPU server**, not locally — the on-robot
+  process only streams RGB-D frames over ZMQ and receives candidate poses back. This is a real
+  deployment constraint (the field laptop doesn't have the GPU headroom AnyGrasp needs), not a
+  design choice carried over from simulation.
+- Hand tracking is real: **MediaPipe** locates the receiver's actual hand landmarks in real time,
+  replacing the simulation's second-arm-as-hand-proxy.
+- Requires a one-time **eye-to-hand calibration** between the RealSense camera and the UR3 base
+  before any of this is meaningful (`scripts/start_calibration.sh`).
+
+| Role | File | What it does |
+|---|---|---|
+| Semantic reasoning | [`brain_node.py`](physical_robot_bundle/src/ur3_handover/scripts/brain_node.py) | OWL-v2 → SAM → SoM grid (with the SAM mask contour overlaid, so GPT-5.4 sees the object boundary before choosing a region) → GPT-5.4 reasoning, reimplemented for the single real UR3 (no giver/receiver split — one arm does the full pick-and-hand-off). SAM runs *before* the GPT call here, unlike `semantic_layer/brain.py`'s simulation pipeline where GPT picks the grid cells first and SAM only segments within them afterward. |
+| Camera client + remote grasp request | [`client_camera.py`](physical_robot_bundle/src/ur3_handover/scripts/client_camera.py) | Publishes RealSense RGB-D, sends the segmented region to the remote AnyGrasp inference server over ZMQ, republishes returned grasp candidates as ROS topics. |
+| Arm + gripper control | [`semantic_grasp_controller.py`](physical_robot_bundle/src/ur3_handover/scripts/semantic_grasp_controller.py) | MoveIt-based pick, in-air PCA orientation adjustment (same idea as the sim controller), and handover motion; drives the Robotiq gripper over TCP socket (`robotiq_gripper.py`). |
+| Hand tracking | [`handover_perception.py`](physical_robot_bundle/src/ur3_handover/scripts/handover_perception.py) | MediaPipe hand-landmark detection; publishes the receiver's live hand position so the controller knows when/where to release. |
+
+Hardware requirements: a UR3 with a Robotiq gripper, an eye-to-hand-calibrated RealSense camera,
+and network access to a separately-hosted AnyGrasp inference server (not included in this repo —
+see [`docs/DEPENDENCIES.md`](physical_robot_bundle/docs/DEPENDENCIES.md)).
+
+Full setup and the startup sequence (which of the processes above start in which order, safety
+checks before enabling robot motion, calibration steps) are in the bundle's own
+[README](physical_robot_bundle/README.md) and
+[operations manual](physical_robot_bundle/docs/OPERATIONS.md) — this section is only meant to
+orient you before you go read those.
 
 ## Attribution / licensing
 
