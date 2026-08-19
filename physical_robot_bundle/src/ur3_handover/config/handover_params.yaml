@@ -1,0 +1,87 @@
+# handover 參數說明
+# 1. 這份檔案給 handover_perception.py 和 semantic_grasp_controller.py 共用。
+# 2. 修改後直接存檔即可，節點會自動重載，不需要手動 rosparam load。
+# 3. 最常改的是：
+#    - handover_zone_center_xyz: 交接區中心
+#    - handover_zone_half_extents_xyz: 交接區半長寬高
+#    - handover_zone_yaw_deg: 交接區沿 base_link Z 軸旋轉角度
+#    - handover_stop_at_zone_entry: 抓取抬升後先停在進入交接區的入口點，再開始 hand tracking
+#    - default_handover_pose: 抓取抬升後先前往的固定交接等待姿態（xyz 是 object/TCP 位置，不是 tool0）
+#    - enable_handover_fine_adjust: 到達 default pose 後才允許依 hand_state 小範圍微調
+#    - handover_keepout_radius / handover_distance_from_hand / handover_max_adjust: handover 微調安全距離
+#    - handover_z_min / handover_z_max: handover 微調物體高度限制
+#    - handover_tracking_*: 等待交接期間低頻追蹤人手的規劃頻率與步長限制
+#    - release_timeout: 等待放開指令（按 Enter）的逾時秒數
+#    - handover_zone_visible / handover_zone_color_rgba: RViz 交接區顯示樣式
+#    - safety_marker_enabled / safety_marker_topic: RViz 控制端安全區域顯示
+#    - swap_handedness_labels / right_hand_normal_sign / left_hand_normal_sign: 掌心箭頭正反面調整
+#    - handedness_debounce_frames / palm_normal_ema_alpha: 掌心箭頭穩定化
+#    - rgb_depth_sync_slop / rgb_depth_sync_queue_size: RGB-D 同步容許時間與同步佇列大小
+semantic_handover:
+  hand_state_topic: /semantic_handover/hand_state        # handover_perception 發出的手部狀態 topic
+  marker_topic: /semantic_handover/markers               # RViz 顯示手、掌心、交接區的 Marker topic
+  safety_marker_topic: /semantic_handover/safety_markers # controller 額外顯示安全距離/微調區域的 MarkerArray topic
+  safety_marker_enabled: true                            # 是否在 RViz 顯示手部 keepout 與微調安全區域
+  safety_marker_alpha: 0.65                              # 安全區域透明度，0 完全透明，1 完全不透明
+  user_cmd_topic: /semantic_handover/user_cmd            # 外部 abort/resume 等交接控制指令 topic
+
+  # use_dynamic_handover is kept for backward compatibility. In the controller,
+  # it now means the same thing as enable_handover_fine_adjust.
+  use_dynamic_handover: true                             # 舊版參數相容；現在等同 enable_handover_fine_adjust
+  enable_handover_fine_adjust: true                      # 到達交接等待點後，是否允許依手部位置做安全微調
+  default_handover_pose:                                 # 預設交接中心姿態；xyz 是 object/TCP 位置，不是 tool0
+    xyz: [-0.2, 0.4, 0.1]                               # 物體/TCP 的預設交接中心座標，base_link 座標系
+    rpy_deg: [180.0, 0.0, 0.0]                            # 預設交接姿態角度，degree；目前 fine adjust 會沿用這個 orientation
+  handover_stop_at_zone_entry: true                      # 抬升後先停在進入交接區的入口點，不直接走到中心
+  handover_zone_entry_margin: 0.02                       # 入口點內縮距離，避免剛好停在交接區邊界
+  handover_object_offset_xyz: [0.0, 0.2, 0.03]            # 舊版 palm+offset 交接偏移；目前主安全微調不再直接依賴它
+  handover_keepout_radius: 0.10                          # 手心安全區半徑；object/TCP 和 tool0 都不可小於此距離
+  handover_distance_from_hand: 0.20                      # 一次性 fine adjust 希望讓 object/TCP 距手心多遠；tracking 會改用 keepout 邊界
+  handover_max_adjust: 0.20                              # 一次性 fine adjust 相對 default_handover_pose 的最大微調距離；tracking 不用此值限制跟手
+  handover_min_hand_distance: 0.05                       # 手心距 default object 太近時不微調，避免方向不穩或太靠近手
+  handover_max_hand_distance: 0.50                       # 手心距 default object 太遠時不微調，避免追到錯誤手位
+  handover_z_min: 0.05                                   # 微調後 object/TCP 最低高度限制
+  handover_z_max: 0.3                                   # 微調後 object/TCP 最高高度限制
+  handover_fine_adjust_vel_scale: 0.05                   # fine adjust / tracking 的 MoveIt 速度比例
+  handover_fine_adjust_acc_scale: 0.05                   # fine adjust / tracking 的 MoveIt 加速度比例
+  release_hold_time: 1.2                               # force 超過門檻需連續維持多久才放手
+  release_requires_stable_hand: false                    # 放手前是否要求 hand_state valid、in_zone 且穩定
+  handover_tracking_enabled: true                        # 等待交接期間是否持續低頻追蹤人手位置
+  handover_tracking_hz: 4.0                              # tracking loop 頻率；不是每次都會重新規劃
+  handover_replan_interval: 0.4                          # tracking 重新規劃的最短間隔秒數
+  handover_replan_min_delta: 0.015                       # 新目標與目前姿態差距小於此值時略過重新規劃
+  handover_track_max_step: 0.1                          # tracking 單次重新規劃允許的最大位移
+  handover_tracking_settle_time: 0.4                     # 每次 tracking 移動後重新 baseline 前的穩定等待時間
+
+  # Edit these on site to tune the handover zone quickly.
+  handover_zone_center_xyz: [-0.2, 0.4, 0.1]            # 交接區盒子中心，base_link 座標系
+  handover_zone_half_extents_xyz: [0.3, 0.125, 0.08]      # 交接區半長寬高；實際盒子大小是這組數值的 2 倍
+  handover_zone_yaw_deg: 40.0                            # 交接區盒子繞 base_link Z 軸旋轉角度
+  handover_zone_visible: true                            # 是否在 RViz 顯示交接區盒子
+  handover_zone_color_rgba: [0.1, 0.5, 1.0, 0.5]         # 交接區盒子顏色與透明度 [R,G,B,A]
+  swap_handedness_labels: true                           # 是否交換左右手標籤，修正 MediaPipe/相機鏡像造成的左右顛倒
+  right_hand_normal_sign: 1.0                            # 右手 palm normal 方向倍率，1 或 -1 用來翻轉箭頭方向
+  left_hand_normal_sign: -1.0                            # 左手 palm normal 方向倍率，1 或 -1 用來翻轉箭頭方向
+  handedness_debounce_frames: 3                          # 左右手標籤需連續穩定幾幀才切換，降低跳動
+  palm_normal_ema_alpha: 0.25                            # 掌心法向量 EMA 平滑係數；越小越穩但反應越慢
+
+  process_hz: 8.0                                       # handover_perception 處理手部狀態的頻率
+  rgb_depth_sync_slop: 0.08                             # RGB 與 depth 允許的最大時間差秒數；改這項需重啟 handover_perception
+  rgb_depth_sync_queue_size: 5                          # RGB-D 同步器佇列大小；影像延遲或掉幀時可加大，改這項需重啟 handover_perception
+  depth_sample_radius_px: 6                             # 從手部 landmark 周圍取深度時的像素搜尋半徑
+  min_valid_depth_m: 0.15                               # 有效深度最小值，小於此值視為無效
+  max_valid_depth_m: 1.20                               # 有效深度最大值，大於此值視為無效
+  stability_window: 8                                   # 計算手位穩定度使用的歷史幀數
+  stability_pos_threshold: 0.03                         # 歷史手心位置變動小於此距離時視為穩定
+  hand_state_stability_threshold: 0.80                  # controller 接受 hand_state 的最低穩定度
+  handover_hand_timeout: 20.0                           # 一次性 fine adjust 等待穩定手位的最長秒數
+
+  release_timeout: 300.0                                 # 等待放開指令的最長秒數，逾時保持夾持
+  handover_fallback_orientation: true                    # 交接區規劃失敗時，自動清除抓取方向改用預設俯抓方向（default_handover_pose rpy_deg）重試一次
+  grasp_candidate_topk: 3                                # IK 可達性篩選最多檢查幾個候選（server 最多送 10）
+  pca_rotation_enabled: true                            # 抬升後旋轉握持端朝向交接區；先確認流程正常再開啟
+  pca_strategy: functional_end                           # functional_end（需 server 送 grip_end_px）或 geometric
+  pca_min_angle_deg: 15.0                                # 計算角度小於此值不旋轉（避免微小抖動）
+  handover_pca_timeout_s: 5.0                            # 交接姿態誤差指標：等待 server 重觀測物件主軸的逾時秒數
+  grasp_depth: 0.05                                      # AnyGrasp 抓取深度偏移（公尺）；改後存檔即自動重載
+  grip_force: 255                                        # 夾爪夾緊力道（0–235）；改後存檔即自動重載

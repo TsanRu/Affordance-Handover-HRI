@@ -185,6 +185,19 @@ python3 ur_control/scripts/simple_grasp_controller.py
 `ur_control/scripts/check_nodes.sh` / `restart_node.sh` / `restart_node_bg.sh` are convenience
 scripts for polling node liveness and restarting individual nodes without restarting everything.
 
+## Physical robot deployment
+
+[`physical_robot_bundle/`](physical_robot_bundle/) is the real-UR3 counterpart to the simulation
+above — a self-contained catkin workspace (own `catkin_make`, own dependencies, run it separately
+from the simulation packages) that hands objects to a real human hand instead of a second robot
+arm. It uses OWL-v2 + SAM + Gemini for semantic grasp-region reasoning (same idea as
+`semantic_layer/`, different implementation) and MediaPipe for real-time hand tracking during the
+handover, with grasp pose generation offloaded to a remote AnyGrasp inference server over ZMQ.
+See its own [README](physical_robot_bundle/README.md),
+[dependency list](physical_robot_bundle/docs/DEPENDENCIES.md), and
+[operations manual](physical_robot_bundle/docs/OPERATIONS.md) — none of the simulation setup
+above applies to it.
+
 ## Attribution / licensing
 
 - The `ros_ur3` package tree is forked from [cambel/ur3](https://github.com/cambel/ur3) (MIT

@@ -1,0 +1,14 @@
+build/
+devel/
+install/
+logs/
+.catkin_tools/
+__pycache__/
+*.pyc
+.env
+
+# The parent repository ignores these names globally. Keep the bundle's
+# distributable model and key template visible to Git.
+!.env.example
+!models/
+!models/hand_landmarker.task

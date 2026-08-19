@@ -1,0 +1,13 @@
+<launch>
+  <arg name="calibration_file"
+       default="$(env HOME)/.ros/easy_handeye/ur3_realsense_handeyecalibration_eye_on_base.yaml" />
+
+  <include file="$(find easy_handeye)/launch/publish.launch">
+    <arg name="eye_on_hand" value="false" />
+    <arg name="namespace_prefix" value="ur3_realsense_handeyecalibration" />
+    <arg name="robot_base_frame" value="base_link" />
+    <arg name="tracking_base_frame" value="camera_color_optical_frame" />
+    <arg name="calibration_file" value="$(arg calibration_file)" />
+  </include>
+</launch>
+
