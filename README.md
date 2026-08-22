@@ -12,7 +12,7 @@ simulation (one arm handing to a second arm acting as a receiver proxy, with a c
 **Affordance GT** metric measuring whether the correct end was actually grasped) and then
 deployed to a physical UR3 handing objects to a real human hand.
 
-<!-- TODO: 有demo影片/GIF的話放在這裡 -->
+![Demo: affordance-aware handover](assets/teaser_preview.gif)
 
 ## Motivation
 
