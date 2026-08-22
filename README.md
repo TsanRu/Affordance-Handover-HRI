@@ -235,10 +235,6 @@ This repo contains only the code written for this research (dual-arm control log
 semantic-layer glue code, the affordance metric, and the ablation experiment tooling) — not the
 upstream AnyGrasp / FoundationPose codebases themselves.
 
-## Author
-
-Developed at the [Robot Vision Lab](https://ntut-rvl.github.io/web/).
-
 ## Citation
 
 A conference paper based on this work is currently under submission. Citation information will
